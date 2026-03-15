@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Карта России — Игра</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+    }
+
+    body {
+      background: #e8f4fd;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    h1 {
+      flex-shrink: 0;
+      font-size: 1.6rem;
+      color: #1a3a6b;
+      text-align: center;
+      padding: 10px 0 6px;
+      text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
+      letter-spacing: 1px;
+    }
+
+    /* ── Map wrapper ── */
+    .map-wrapper {
+      position: relative;
+      flex: 1 1 auto;
+      overflow: hidden;
+    }
+
+    .map-wrapper img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      object-position: center;
+      user-select: none;
+      pointer-events: none;
+    }
+
+    /* ── Marker ── */
+    .marker {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      cursor: pointer;
+      z-index: 10;
+    }
+
+    .marker .pulse-ring {
+      position: absolute;
+      inset: -8px;
+      border-radius: 50%;
+      border: 3px solid rgba(255, 220, 0, 0.9);
+      animation: pulse-ring 1.6s ease-out infinite;
+    }
+
+    .marker .pulse-ring2 {
+      position: absolute;
+      inset: -14px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 140, 0, 0.6);
+      animation: pulse-ring 1.6s ease-out 0.5s infinite;
+    }
+
+    .marker .icon {
+      position: relative;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #ffd700, #ff8c00);
+      box-shadow: 0 3px 14px rgba(255,140,0,0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 900;
+      color: #fff;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      animation: float 3s ease-in-out infinite;
+    }
+
+    .marker:hover .icon {
+      transform: scale(1.2);
+      box-shadow: 0 5px 22px rgba(255,140,0,0.9);
+    }
+
+    @keyframes pulse-ring {
+      0%   { transform: scale(0.85); opacity: 1; }
+      70%  { transform: scale(1.6);  opacity: 0; }
+      100% { transform: scale(0.85); opacity: 0; }
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-5px); }
+    }
+
+    /* ── Tooltip label ── */
+    .marker .label {
+      position: absolute;
+      bottom: 46px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(20, 20, 60, 0.88);
+      color: #fff;
+      font-size: 11px;
+      white-space: nowrap;
+      padding: 3px 8px;
+      border-radius: 6px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .marker:hover .label { opacity: 1; }
+
+    /* ── Dev tip ── */
+    #devTip {
+      flex-shrink: 0;
+      text-align: center;
+      font-size: 11px;
+      color: #6688aa;
+      padding-bottom: 4px;
+      user-select: none;
+    }
+
+    /* ── Coordinate picker hint ── */
+    #coordHint {
+      position: absolute;
+      background: rgba(0,0,0,0.82);
+      color: #ffe;
+      font-size: 13px;
+      font-family: monospace;
+      padding: 4px 10px;
+      border-radius: 6px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: 50;
+      white-space: nowrap;
+    }
+
+    /* ── Modal overlay ── */
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,30,0.65);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .overlay.active { display: flex; }
+
+    /* ── Modal box ── */
+    .modal {
+      background: linear-gradient(160deg, #ffffff, #eef4ff);
+      border-radius: 22px;
+      padding: 36px 40px 30px;
+      max-width: 480px;
+      width: 90%;
+      box-shadow: 0 16px 60px rgba(0,0,60,0.4);
+      position: relative;
+      animation: pop-in 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards;
+      text-align: center;
+    }
+
+    @keyframes pop-in {
+      from { transform: scale(0.7); opacity: 0; }
+      to   { transform: scale(1);   opacity: 1; }
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 14px; right: 18px;
+      font-size: 26px;
+      cursor: pointer;
+      color: #888;
+      line-height: 1;
+      transition: color 0.2s, transform 0.2s;
+    }
+    .modal-close:hover { color: #e00; transform: scale(1.2); }
+
+    .modal-emoji {
+      font-size: 72px;
+      margin-bottom: 10px;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
+      animation: bounce-in 0.4s 0.1s both;
+    }
+
+    @keyframes bounce-in {
+      0%   { transform: scale(0); opacity: 0; }
+      60%  { transform: scale(1.15); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .modal-title {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: #1a3a6b;
+      margin-bottom: 6px;
+    }
+
+    .modal-subtitle {
+      font-size: 1rem;
+      color: #e07000;
+      font-weight: 600;
+      margin-bottom: 14px;
+    }
+
+    .modal-divider {
+      border: none;
+      border-top: 2px solid #dde8ff;
+      margin: 12px 0;
+    }
+
+    .modal-desc {
+      font-size: 0.97rem;
+      color: #334;
+      line-height: 1.6;
+    }
+
+    .modal-tag {
+      display: inline-block;
+      margin-top: 18px;
+      padding: 6px 18px;
+      border-radius: 20px;
+      background: linear-gradient(90deg, #ffd700, #ff8c00);
+      color: #fff;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🗺️ Карта России</h1>
+<div id="devTip">⇧ Shift + клик по карте — показать координаты точки</div>
+
+<div class="map-wrapper" id="mapWrapper">
+  <img src="rusmap.png" alt="Карта России" id="mapImg" />
+  <div id="coordHint"></div>
+</div>
+
+<!-- Modal overlay -->
+<div class="overlay" id="overlay">
+  <div class="modal" id="modal">
+    <span class="modal-close" id="modalClose">✕</span>
+    <div class="modal-emoji" id="modalEmoji"></div>
+    <div class="modal-title"  id="modalTitle"></div>
+    <div class="modal-subtitle" id="modalSubtitle"></div>
+    <hr class="modal-divider" />
+    <div class="modal-desc"   id="modalDesc"></div>
+    <span class="modal-tag"   id="modalTag"></span>
+  </div>
+</div>
+
+<script>
+  /* ──────────────────────────────────────────────
+     Region data
+     x/y = % of image width/height from top-left
+  ────────────────────────────────────────────── */
+  const regions = [
+    {
+      id: 'spb1',
+      label: 'Санкт-Петербург',
+      title: 'Санкт-Петербург',
+      subtitle: 'Северная столица России',
+      desc: 'Основан Петром I в 1703 году. Известен Эрмитажем, Мариинским театром и белыми ночами на Неве.',
+      emoji: '🏛️',
+      tag: '#СеверняяСтолица',
+      x: 15.5, y: 37,
+      freq: [523, 659, 784]
+    },
+    {
+      id: 'spb2',
+      label: 'Санкт-Петербург',
+      title: 'Санкт-Петербург',
+      subtitle: 'Город на Неве',
+      desc: 'Петергоф, Кронштадт, разводные мосты — символы морской и имперской России.',
+      emoji: '⚓',
+      tag: '#ГородНаНеве',
+      x: 14.0, y: 32,
+      freq: [659, 784, 880]
+    },
+    {
+      id: 'moscow',
+      label: 'Москва',
+      title: 'Москва',
+      subtitle: 'Столица Российской Федерации',
+      desc: 'Политический, экономический и культурный центр страны. Москва-река, Кремль, Красная площадь — сердце России.',
+      emoji: '🔴',
+      tag: '#СтолицаРоссии',
+      x: 18.5, y: 50,
+      freq: [440, 554, 659]
+    },
+    {
+      id: 'vladimir',
+      label: 'Владимир',
+      title: 'Владимир',
+      subtitle: 'Жемчужина Золотого кольца',
+      desc: 'Один из старейших городов России, основан в 990 году. Успенский собор и Золотые ворота — шедевры белокаменного зодчества.',
+      emoji: '⛪',
+      tag: '#ЗолотоеКольцо',
+      x: 22.5, y: 48,
+      freq: [392, 494, 587]
+    },
+    {
+      id: 'tatarstan',
+      label: 'Татарстан',
+      title: 'Татарстан',
+      subtitle: 'Республика на Волге',
+      desc: 'Казань — столица Татарстана, где встречаются русская и татарская культуры. Казанский Кремль входит в список ЮНЕСКО.',
+      emoji: '🕌',
+      tag: '#КазаньСтолица',
+      x: 29.5, y: 52,
+      freq: [349, 440, 523]
+    },
+    {
+      id: 'kavkaz',
+      label: 'Кавказ',
+      title: 'Кавказ',
+      subtitle: 'Горный край юга России',
+      desc: 'Кавказские горы, Эльбрус — высочайшая вершина Европы (5 642 м). Уникальное природное и культурное разнообразие.',
+      emoji: '⛰️',
+      tag: '#Эльбрус',
+      x: 21.0, y: 63,
+      freq: [262, 330, 392]
+    },
+    {
+      id: 'ural',
+      label: 'Урал',
+      title: 'Урал',
+      subtitle: 'Граница Европы и Азии',
+      desc: 'Уральские горы разделяют Европу и Азию. Богат полезными ископаемыми: изумруды, малахит, железо, золото.',
+      emoji: '💎',
+      tag: '#ЕвропаАзия',
+      x: 40.0, y: 47,
+      freq: [294, 370, 440]
+    },
+    {
+      id: 'siberia',
+      label: 'Сибирь',
+      title: 'Сибирь',
+      subtitle: 'Бескрайние просторы',
+      desc: 'Сибирь занимает 77% территории России. Байкал — глубочайшее озеро планеты. Тайга, реки Обь, Енисей, Лена.',
+      emoji: '🌲',
+      tag: '#БайкалСибирь',
+      x: 58.0, y: 43,
+      freq: [220, 277, 330]
+    },
+    {
+      id: 'fareast',
+      label: 'Дальний Восток',
+      title: 'Дальний Восток',
+      subtitle: 'На краю России',
+      desc: 'Камчатка с вулканами, Сахалин, Владивосток. Здесь живут амурские тигры и расцветает сакура.',
+      emoji: '🌋',
+      tag: '#Камчатка',
+      x: 80.0, y: 48,
+      freq: [185, 233, 277]
+    }
+  ];
+
+  /* ──────────────────────────────────────────────
+     Build markers after image loads
+  ────────────────────────────────────────────── */
+  const mapImg     = document.getElementById('mapImg');
+  const mapWrapper = document.getElementById('mapWrapper');
+
+  /* Return the pixel rect of the actually-rendered image area inside the container,
+     accounting for object-fit: contain letterboxing */
+  function getRenderedRect() {
+    const cW = mapImg.offsetWidth;
+    const cH = mapImg.offsetHeight;
+    const natW = mapImg.naturalWidth  || cW;
+    const natH = mapImg.naturalHeight || cH;
+    const imgRatio = natW / natH;
+    const conRatio = cW  / cH;
+    let rW, rH, oX, oY;
+    if (imgRatio > conRatio) {
+      rW = cW; rH = cW / imgRatio;
+      oX = 0;  oY = (cH - rH) / 2;
+    } else {
+      rH = cH; rW = cH * imgRatio;
+      oY = 0;  oX = (cW - rW) / 2;
+    }
+    return { rW, rH, oX, oY };
+  }
+
+  function buildMarkers() {
+    document.querySelectorAll('.marker').forEach(el => el.remove());
+
+    const { rW, rH, oX, oY } = getRenderedRect();
+
+    regions.forEach(r => {
+      const el = document.createElement('div');
+      el.className = 'marker';
+      el.style.left = (oX + r.x / 100 * rW) + 'px';
+      el.style.top  = (oY + r.y / 100 * rH) + 'px';
+      el.innerHTML = `
+        <div class="pulse-ring"></div>
+        <div class="pulse-ring2"></div>
+        <div class="icon">?</div>
+        <div class="label">${r.label}</div>
+      `;
+      el.addEventListener('click', () => openModal(r));
+      mapWrapper.appendChild(el);
+    });
+  }
+
+  mapImg.addEventListener('load', buildMarkers);
+  if (mapImg.complete) buildMarkers();
+  window.addEventListener('resize', buildMarkers);
+
+  /* ──────────────────────────────────────────────
+     Dev: Shift+click → show coordinates in overlay
+  ────────────────────────────────────────────── */
+  const coordHint = document.getElementById('coordHint');
+  mapWrapper.addEventListener('click', e => {
+    if (!e.shiftKey) return;
+    e.stopPropagation();
+    const { rW, rH, oX, oY } = getRenderedRect();
+    const rect = mapWrapper.getBoundingClientRect();
+    const px = e.clientX - rect.left;
+    const py = e.clientY - rect.top;
+    const xPct = ((px - oX) / rW * 100).toFixed(1);
+    const yPct = ((py - oY) / rH * 100).toFixed(1);
+    coordHint.textContent = `x: ${xPct}, y: ${yPct}`;
+    coordHint.style.left = (px + 10) + 'px';
+    coordHint.style.top  = (py + 10) + 'px';
+    coordHint.style.opacity = '1';
+    clearTimeout(coordHint._t);
+    coordHint._t = setTimeout(() => coordHint.style.opacity = '0', 2500);
+  });
+
+  /* ──────────────────────────────────────────────
+     Sound synthesis
+  ────────────────────────────────────────────── */
+  let audioCtx = null;
+  function getAudioCtx() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    return audioCtx;
+  }
+
+  function playChord(frequencies) {
+    const ctx = getAudioCtx();
+    frequencies.forEach((freq, i) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      const start = ctx.currentTime + i * 0.08;
+      gain.gain.setValueAtTime(0, start);
+      gain.gain.linearRampToValueAtTime(0.22, start + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 1.2);
+      osc.start(start);
+      osc.stop(start + 1.3);
+    });
+  }
+
+  /* ──────────────────────────────────────────────
+     Modal
+  ────────────────────────────────────────────── */
+  const overlay      = document.getElementById('overlay');
+  const modalClose   = document.getElementById('modalClose');
+  const modalEmoji   = document.getElementById('modalEmoji');
+  const modalTitle   = document.getElementById('modalTitle');
+  const modalSub     = document.getElementById('modalSubtitle');
+  const modalDesc    = document.getElementById('modalDesc');
+  const modalTag     = document.getElementById('modalTag');
+
+  function openModal(region) {
+    modalEmoji.textContent  = region.emoji;
+    modalTitle.textContent  = region.title;
+    modalSub.textContent    = region.subtitle;
+    modalDesc.textContent   = region.desc;
+    modalTag.textContent    = region.tag;
+
+    overlay.classList.add('active');
+    playChord(region.freq);
+  }
+
+  function closeModal() {
+    overlay.classList.remove('active');
+  }
+
+  modalClose.addEventListener('click', closeModal);
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+</script>
+</body>
+</html>
