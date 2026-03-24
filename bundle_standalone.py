@@ -28,7 +28,7 @@ PLACEHOLDER_RE = re.compile(r"\./files/(?:img|music)/[^\s\"')]+")
 def main() -> None:
     root = Path(__file__).resolve().parent
     src = root / "index.html"
-    out = root / "index-standalone.html"
+    out = root / "play.html"
     if not src.is_file():
         print("Нет index.html рядом со скриптом.", file=sys.stderr)
         sys.exit(1)

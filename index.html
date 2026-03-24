@@ -404,9 +404,54 @@
       .symbol-item img { height: 85px !important; }
       .symbol-label { font-size: 10px; }
     }
+
+    /* ── Full-page preloader ── */
+    .page-preloader {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 22px;
+      background: linear-gradient(165deg, #d9ecfb 0%, #e8f4fd 45%, #cfe8f9 100%);
+      transition: opacity 0.45s ease, visibility 0.45s ease;
+    }
+
+    .page-preloader.is-hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .page-preloader__ring {
+      width: 56px;
+      height: 56px;
+      border: 4px solid rgba(26, 58, 107, 0.12);
+      border-top-color: #1a3a6b;
+      border-radius: 50%;
+      animation: preloader-spin 0.85s linear infinite;
+    }
+
+    .page-preloader__text {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #1a3a6b;
+      letter-spacing: 0.04em;
+    }
+
+    @keyframes preloader-spin {
+      to { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
+
+<div class="page-preloader" id="pagePreloader" aria-busy="true" aria-live="polite">
+  <div class="page-preloader__ring" aria-hidden="true"></div>
+  <div class="page-preloader__text">Загрузка…</div>
+</div>
 
 <div class="map-wrapper" id="mapWrapper">
   <img src="./files/img/rusmap.png" alt="Карта России" id="mapImg" />
@@ -464,8 +509,8 @@
       zIndex: 12,
       x: 15.7, y: 38,
       freq: [523, 659, 784],
-      audio: './files/music/dsad.mp3',
-      img: './files/img/dsad.webp',
+      audio: './files/music/sad-n.mp3',
+      img: './files/img/sad-n.webp',
     },
     {
       id: 'spb2',
@@ -555,6 +600,75 @@
   ────────────────────────────────────────────── */
   const mapImg     = document.getElementById('mapImg');
   const mapWrapper = document.getElementById('mapWrapper');
+  const pagePreloader = document.getElementById('pagePreloader');
+
+  function collectPreloadUrls() {
+    const out = new Set();
+    const add = (u) => { if (u) out.add(u); };
+    add(mapImg.getAttribute('src'));
+    add(document.getElementById('flagBtn')?.getAttribute('src'));
+    add(document.getElementById('gerbBtn')?.getAttribute('src'));
+    add(document.getElementById('skeyBtn')?.getAttribute('src'));
+    add(document.getElementById('gymnAudio')?.getAttribute('src'));
+    regions.forEach((r) => {
+      add(r.img);
+      add(r.audio);
+    });
+    return [...out];
+  }
+
+  function preloadImage(url) {
+    return new Promise((resolve) => {
+      const im = new Image();
+      const done = () => resolve();
+      im.onload = done;
+      im.onerror = done;
+      im.src = url;
+    });
+  }
+
+  function isAudioUrl(url) {
+    return /\.(mp3|ogg|wav|m4a|aac)(\?.*)?$/i.test(url);
+  }
+
+  function preloadAudio(url) {
+    return new Promise((resolve) => {
+      const a = new Audio();
+      const done = () => resolve();
+      a.addEventListener('canplaythrough', done, { once: true });
+      a.addEventListener('error', done, { once: true });
+      a.preload = 'auto';
+      a.src = url;
+      setTimeout(done, 45000);
+    });
+  }
+
+  function waitWindowLoad() {
+    if (document.readyState === 'complete') return Promise.resolve();
+    return new Promise((r) => window.addEventListener('load', r, { once: true }));
+  }
+
+  function waitMapImgReady(img) {
+    return new Promise((resolve) => {
+      if (img.complete && img.naturalWidth) resolve();
+      else {
+        img.addEventListener('load', () => resolve(), { once: true });
+        img.addEventListener('error', () => resolve(), { once: true });
+      }
+    });
+  }
+
+  async function runPagePreloader() {
+    const urls = collectPreloadUrls();
+    const tasks = urls.map((u) => (isAudioUrl(u) ? preloadAudio(u) : preloadImage(u)));
+    await Promise.all([waitWindowLoad(), waitMapImgReady(mapImg), ...tasks]);
+    buildMarkers();
+    pagePreloader.classList.add('is-hidden');
+    pagePreloader.setAttribute('aria-busy', 'false');
+    setTimeout(() => pagePreloader.remove(), 500);
+  }
+
+  runPagePreloader();
 
   /* Return the pixel rect of the actually-rendered image area inside the container,
      accounting for object-fit: contain letterboxing */
@@ -615,7 +729,6 @@
   }
 
   mapImg.addEventListener('load', buildMarkers);
-  if (mapImg.complete) buildMarkers();
   window.addEventListener('resize', buildMarkers);
 
   /* ──────────────────────────────────────────────
