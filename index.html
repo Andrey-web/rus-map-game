@@ -169,8 +169,10 @@
       background: linear-gradient(160deg, #ffffff, #eef4ff);
       border-radius: 22px;
       padding: 36px 40px 30px;
-      max-width: 480px;
-      width: 90%;
+      width: min(90vw, 90vh);
+      max-width: min(90vw, 90vh);
+      max-height: 90vh;
+      overflow-y: auto;
       box-shadow: 0 16px 60px rgba(0,0,60,0.4);
       position: relative;
       animation: pop-in 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards;
@@ -200,6 +202,16 @@
       animation: bounce-in 0.4s 0.1s both;
     }
 
+    .modal-emoji img {
+      display: block;
+      width: 100%;
+      height: auto;
+      object-fit: cover;
+      border-radius: 14px;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.25);
+      margin: 0 auto;
+    }
+
     @keyframes bounce-in {
       0%   { transform: scale(0); opacity: 0; }
       60%  { transform: scale(1.15); }
@@ -213,25 +225,6 @@
       margin-bottom: 6px;
     }
 
-    .modal-subtitle {
-      font-size: 1rem;
-      color: #e07000;
-      font-weight: 600;
-      margin-bottom: 14px;
-    }
-
-    .modal-divider {
-      border: none;
-      border-top: 2px solid #dde8ff;
-      margin: 12px 0;
-    }
-
-    .modal-desc {
-      font-size: 0.97rem;
-      color: #334;
-      line-height: 1.6;
-    }
-
     .modal-tag {
       display: inline-block;
       margin-top: 18px;
@@ -243,15 +236,208 @@
       font-weight: 700;
       letter-spacing: 0.5px;
     }
+
+    /* ── Symbols panel ── */
+    .symbols-panel {
+      position: absolute;
+      display: flex;
+      align-items: flex-end;
+      gap: 72px;
+      z-index: 20;
+    }
+
+    .symbol-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .symbol-item img {
+      display: block;
+      object-fit: contain;
+      filter: drop-shadow(0 3px 8px rgba(0,0,0,0.35));
+      transition: transform 0.18s ease, filter 0.18s ease;
+      pointer-events: auto;
+      user-select: none;
+      cursor: pointer;
+    }
+
+    .symbol-item img:hover {
+      transform: scale(1.1);
+      filter: drop-shadow(0 5px 14px rgba(0,0,0,0.5));
+    }
+
+    .symbol-item.skey-item img.playing {
+      animation: skey-glow 0.8s ease-in-out infinite alternate;
+    }
+
+    @keyframes skey-glow {
+      from { filter: drop-shadow(0 3px 8px rgba(0,0,0,0.35)); }
+      to   { filter: drop-shadow(0 0 16px rgba(255,200,0,0.95)) drop-shadow(0 0 6px rgba(255,140,0,0.9)); }
+    }
+
+    .symbol-label {
+      font-size: 13px;
+      color: #1a3a6b;
+      font-weight: 600;
+      text-shadow: 0 1px 3px rgba(255,255,255,0.9);
+      letter-spacing: 0.3px;
+    }
+
+    /* ── Fullscreen image viewer ── */
+    .img-viewer {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 20, 0.82);
+      backdrop-filter: blur(6px);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .img-viewer.active { display: flex; }
+
+    .img-viewer img {
+      max-width: 88vw;
+      max-height: 88vh;
+      object-fit: contain;
+      border-radius: 12px;
+      box-shadow: 0 20px 80px rgba(0,0,0,0.7);
+      animation: viewer-pop 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards;
+    }
+
+    .img-viewer.closing img {
+      animation: viewer-out 0.4s ease forwards;
+    }
+
+    .img-viewer-timer {
+      position: absolute;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: rgba(255,255,255,0.75);
+      font-size: 15px;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      pointer-events: none;
+    }
+
+    .img-viewer-bar {
+      width: 160px;
+      height: 4px;
+      background: rgba(255,255,255,0.25);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .img-viewer-bar-fill {
+      height: 100%;
+      background: #fff;
+      border-radius: 2px;
+      width: 100%;
+      transform-origin: left;
+      animation: bar-shrink 5s linear forwards;
+    }
+
+    @keyframes viewer-pop {
+      from { transform: scale(0.6); opacity: 0; }
+      to   { transform: scale(1);   opacity: 1; }
+    }
+
+    @keyframes viewer-out {
+      from { transform: scale(1);   opacity: 1; }
+      to   { transform: scale(0.7); opacity: 0; }
+    }
+
+    @keyframes bar-shrink {
+      from { transform: scaleX(1); }
+      to   { transform: scaleX(0); }
+    }
+
+    /* ── Visited marker (green, no pulse) ── */
+    .marker.visited .pulse-ring,
+    .marker.visited .pulse-ring2 {
+      display: none;
+    }
+
+    .marker.visited .icon {
+      background: linear-gradient(135deg, #4caf50, #2e7d32);
+      box-shadow: 0 3px 14px rgba(46, 125, 50, 0.7);
+      animation: none;
+    }
+
+    .marker.visited:hover .icon {
+      box-shadow: 0 5px 22px rgba(46, 200, 80, 0.9);
+    }
+
+    /* ── Адаптация FullHD (1920×1080) ── */
+    @media (max-width: 1920px) and (max-height: 1080px) {
+      .marker .pulse-ring { inset: -6px; }
+      .marker .pulse-ring2 { inset: -10px; }
+      .marker .icon {
+        width: 56px;
+        height: 56px;
+        font-size: 30px;
+      }
+      .marker .label { bottom: 34px; font-size: 10px; }
+      .symbols-panel { gap: 48px; }
+      .symbol-item img { height: 180px !important; }
+      .symbol-label { font-size: 11px; }
+    }
+
+    /* ── Адаптация 720p (1280×720) ── */
+    @media (max-width: 1280px) and (max-height: 720px) {
+      .marker .pulse-ring { inset: -4px; }
+      .marker .pulse-ring2 { inset: -8px; }
+      .marker .icon {
+        width: 40px;
+        height: 40px;
+        font-size: 22px;
+      }
+      .marker .label { bottom: 26px; font-size: 9px; }
+      .symbols-panel { gap: 28px; }
+      .symbol-item img { height: 85px !important; }
+      .symbol-label { font-size: 10px; }
+    }
   </style>
 </head>
 <body>
 
-<h1>🗺️ Карта России</h1>
-
 <div class="map-wrapper" id="mapWrapper">
-  <img src="rusmap.png" alt="Карта России" id="mapImg" />
+  <img src="./files/img/rusmap.png" alt="Карта России" id="mapImg" />
   <div id="coordHint"></div>
+
+  <!-- Symbols: flag, coat of arms, treble clef -->
+  <div class="symbols-panel">
+    <div class="symbol-item">
+      <img src="./files/img/flag.png" alt="Флаг России" id="flagBtn" style="height:240px;" draggable="false" />
+      <span class="symbol-label">Флаг</span>
+    </div>
+    <div class="symbol-item">
+      <img src="./files/img/gerb.png" alt="Герб России" id="gerbBtn" style="height:240px;" draggable="false" />
+      <span class="symbol-label">Герб</span>
+    </div>
+    <div class="symbol-item skey-item">
+      <img src="./files/img/skey.png" alt="Гимн России" id="skeyBtn" style="height:240px;" draggable="false" title="Нажми, чтобы услышать гимн" />
+      <span class="symbol-label">Гимн</span>
+    </div>
+  </div>
+
+  <audio id="gymnAudio" src="./files/music/gimn.mp3" preload="auto"></audio>
+</div>
+
+<!-- Fullscreen image viewer -->
+<div class="img-viewer" id="imgViewer">
+  <img id="imgViewerImg" src="" alt="" />
+  <div class="img-viewer-timer">
+    <div class="img-viewer-bar"><div class="img-viewer-bar-fill" id="imgViewerBar"></div></div>
+    <span id="imgViewerCount">5</span>с
+  </div>
 </div>
 
 <!-- Modal overlay -->
@@ -260,10 +446,6 @@
     <span class="modal-close" id="modalClose">✕</span>
     <div class="modal-emoji" id="modalEmoji"></div>
     <div class="modal-title"  id="modalTitle"></div>
-    <div class="modal-subtitle" id="modalSubtitle"></div>
-    <hr class="modal-divider" />
-    <div class="modal-desc"   id="modalDesc"></div>
-    <span class="modal-tag"   id="modalTag"></span>
   </div>
 </div>
 
@@ -275,102 +457,96 @@
   const regions = [
     {
       id: 'spb1',
-      label: 'Санкт-Петербург',
-      title: 'Санкт-Петербург',
-      subtitle: 'Северная столица России',
-      desc: 'Основан Петром I в 1703 году. Известен Эрмитажем, Мариинским театром и белыми ночами на Неве.',
+      label: 'Детский сад 50',
+      title: 'Детский сад 50',
       emoji: '🏛️',
-      tag: '#СеверняяСтолица',
-      x: 15.5, y: 37,
-      freq: [523, 659, 784]
+      markerIcon: '🏠',
+      zIndex: 12,
+      x: 15.7, y: 38,
+      freq: [523, 659, 784],
+      audio: './files/music/dsad.mp3',
+      img: './files/img/dsad.webp',
     },
     {
       id: 'spb2',
       label: 'Санкт-Петербург',
       title: 'Санкт-Петербург',
-      subtitle: 'Город на Неве',
-      desc: 'Петергоф, Кронштадт, разводные мосты — символы морской и имперской России.',
       emoji: '⚓',
-      tag: '#ГородНаНеве',
+      zIndex: 11,
+      img: './files/img/spb.webp',
       x: 14.0, y: 32,
-      freq: [659, 784, 880]
+      freq: [659, 784, 880],
+      audio: './files/music/spb.mp3'
     },
     {
       id: 'moscow',
       label: 'Москва',
       title: 'Москва',
-      subtitle: 'Столица Российской Федерации',
-      desc: 'Политический, экономический и культурный центр страны. Москва-река, Кремль, Красная площадь — сердце России.',
       emoji: '🔴',
-      tag: '#СтолицаРоссии',
+      img: './files/img/kremlin.avif',
       x: 18.5, y: 50,
-      freq: [440, 554, 659]
+      freq: [440, 554, 659],
+      audio: './files/music/musorskiy.mp3'
     },
     {
       id: 'vladimir',
       label: 'Владимир',
       title: 'Владимир',
-      subtitle: 'Жемчужина Золотого кольца',
-      desc: 'Один из старейших городов России, основан в 990 году. Успенский собор и Золотые ворота — шедевры белокаменного зодчества.',
       emoji: '⛪',
-      tag: '#ЗолотоеКольцо',
+      img: './files/img/vladmir.jpg',
       x: 22.5, y: 48,
-      freq: [392, 494, 587]
+      freq: [392, 494, 587],
+      audio: './files/music/hramy.mp3'
     },
     {
       id: 'tatarstan',
       label: 'Татарстан',
       title: 'Татарстан',
-      subtitle: 'Республика на Волге',
-      desc: 'Казань — столица Татарстана, где встречаются русская и татарская культуры. Казанский Кремль входит в список ЮНЕСКО.',
+        img: './files/img/tatar.webp',
       emoji: '🕌',
-      tag: '#КазаньСтолица',
       x: 29.5, y: 52,
-      freq: [349, 440, 523]
+      freq: [349, 440, 523],
+        audio: './files/music/kuraj.mp3'
     },
     {
       id: 'kavkaz',
       label: 'Кавказ',
       title: 'Кавказ',
-      subtitle: 'Горный край юга России',
-      desc: 'Кавказские горы, Эльбрус — высочайшая вершина Европы (5 642 м). Уникальное природное и культурное разнообразие.',
       emoji: '⛰️',
-      tag: '#Эльбрус',
+      img: './files/img/kavkaz.webp',
       x: 21.0, y: 63,
-      freq: [262, 330, 392]
+      freq: [262, 330, 392],
+      audio: './files/music/lezginka.mp3'
     },
     {
       id: 'ural',
       label: 'Урал',
       title: 'Урал',
-      subtitle: 'Граница Европы и Азии',
-      desc: 'Уральские горы разделяют Европу и Азию. Богат полезными ископаемыми: изумруды, малахит, железо, золото.',
       emoji: '💎',
-      tag: '#ЕвропаАзия',
+      img: './files/img/ural.jpg',
       x: 40.0, y: 47,
-      freq: [294, 370, 440]
+      freq: [294, 370, 440],
+        audio: './files/music/ural1.mp3',
     },
     {
       id: 'siberia',
       label: 'Сибирь',
       title: 'Сибирь',
-      subtitle: 'Бескрайние просторы',
-      desc: 'Сибирь занимает 77% территории России. Байкал — глубочайшее озеро планеты. Тайга, реки Обь, Енисей, Лена.',
       emoji: '🌲',
-      tag: '#БайкалСибирь',
+      img: './files/img/siberia.webp',
       x: 58.0, y: 43,
-      freq: [220, 277, 330]
+      freq: [220, 277, 330],
+        audio: './files/music/sibir-g.mp3'
     },
     {
       id: 'fareast',
       label: 'Дальний Восток',
       title: 'Дальний Восток',
-      subtitle: 'На краю России',
-      desc: 'Камчатка с вулканами, Сахалин, Владивосток. Здесь живут амурские тигры и расцветает сакура.',
       emoji: '🌋',
-      tag: '#Камчатка',
+      img: './files/img/dvostok.jpeg',
       x: 80.0, y: 48,
-      freq: [185, 233, 277]
+      freq: [185, 233, 277],
+      audio: './files/music/dvostok-b.mp3'
     }
   ];
 
@@ -400,8 +576,18 @@
     return { rW, rH, oX, oY };
   }
 
+  const symbolsPanel = document.querySelector('.symbols-panel');
+
+  function positionSymbols() {
+    const { rW, rH, oX, oY } = getRenderedRect();
+    const PAD = 24;
+    symbolsPanel.style.left   = (oX + PAD) + 'px';
+    symbolsPanel.style.bottom = (mapWrapper.offsetHeight - oY - rH + PAD) + 'px';
+  }
+
   function buildMarkers() {
     document.querySelectorAll('.marker').forEach(el => el.remove());
+    positionSymbols();
 
     const { rW, rH, oX, oY } = getRenderedRect();
 
@@ -410,13 +596,20 @@
       el.className = 'marker';
       el.style.left = (oX + r.x / 100 * rW) + 'px';
       el.style.top  = (oY + r.y / 100 * rH) + 'px';
+      el.style.zIndex = String(r.zIndex ?? 10);
       el.innerHTML = `
         <div class="pulse-ring"></div>
         <div class="pulse-ring2"></div>
-        <div class="icon">?</div>
+        <div class="icon">${r.markerIcon ?? '?'}</div>
         <div class="label">${r.label}</div>
       `;
-      el.addEventListener('click', () => openModal(r));
+      el.addEventListener('click', () => {
+        if (!el.classList.contains('visited')) {
+          el.classList.add('visited');
+          el.querySelector('.icon').textContent = '😊';
+        }
+        openModal(r);
+      });
       mapWrapper.appendChild(el);
     });
   }
@@ -480,28 +673,109 @@
   const modalClose   = document.getElementById('modalClose');
   const modalEmoji   = document.getElementById('modalEmoji');
   const modalTitle   = document.getElementById('modalTitle');
-  const modalSub     = document.getElementById('modalSubtitle');
-  const modalDesc    = document.getElementById('modalDesc');
-  const modalTag     = document.getElementById('modalTag');
+  let regionAudio = null;
 
   function openModal(region) {
-    modalEmoji.textContent  = region.emoji;
+    if (region.img) {
+      modalEmoji.innerHTML = `<img src="${region.img}" alt="${region.title}" />`;
+    } else {
+      modalEmoji.textContent = region.emoji;
+    }
     modalTitle.textContent  = region.title;
-    modalSub.textContent    = region.subtitle;
-    modalDesc.textContent   = region.desc;
-    modalTag.textContent    = region.tag;
-
     overlay.classList.add('active');
-    playChord(region.freq);
+
+    if (region.audio) {
+      if (regionAudio) { regionAudio.pause(); regionAudio.currentTime = 0; }
+      regionAudio = new Audio(region.audio);
+      regionAudio.play();
+    } else {
+      playChord(region.freq);
+    }
   }
 
   function closeModal() {
     overlay.classList.remove('active');
+    if (regionAudio) { regionAudio.pause(); regionAudio.currentTime = 0; }
   }
 
   modalClose.addEventListener('click', closeModal);
   overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+  /* ──────────────────────────────────────────────
+     Anthem playback via treble clef button
+  ────────────────────────────────────────────── */
+  const gymnAudio = document.getElementById('gymnAudio');
+  const skeyBtn   = document.getElementById('skeyBtn');
+
+  skeyBtn.addEventListener('click', () => {
+    if (gymnAudio.paused) {
+      gymnAudio.currentTime = 0;
+      gymnAudio.play();
+      skeyBtn.classList.add('playing');
+    } else {
+      gymnAudio.pause();
+      gymnAudio.currentTime = 0;
+      skeyBtn.classList.remove('playing');
+    }
+  });
+
+  gymnAudio.addEventListener('ended', () => {
+    skeyBtn.classList.remove('playing');
+  });
+
+  /* ──────────────────────────────────────────────
+     Fullscreen viewer for flag & coat of arms
+  ────────────────────────────────────────────── */
+  const imgViewer    = document.getElementById('imgViewer');
+  const imgViewerImg = document.getElementById('imgViewerImg');
+  const imgViewerBar = document.getElementById('imgViewerBar');
+  const imgViewerCount = document.getElementById('imgViewerCount');
+  let viewerTimer = null;
+  let viewerCountInterval = null;
+
+  function openViewer(src, alt) {
+    clearTimeout(viewerTimer);
+    clearInterval(viewerCountInterval);
+
+    imgViewerImg.src = src;
+    imgViewerImg.alt = alt;
+    imgViewer.classList.remove('closing');
+    imgViewer.classList.add('active');
+
+    // reset bar animation by re-inserting the element
+    const freshBar = imgViewerBar.cloneNode(true);
+    imgViewerBar.replaceWith(freshBar);
+
+    let secs = 5;
+    imgViewerCount.textContent = secs;
+    viewerCountInterval = setInterval(() => {
+      secs--;
+      imgViewerCount.textContent = secs;
+      if (secs <= 0) clearInterval(viewerCountInterval);
+    }, 1000);
+
+    viewerTimer = setTimeout(closeViewer, 5000);
+  }
+
+  function closeViewer() {
+    clearTimeout(viewerTimer);
+    clearInterval(viewerCountInterval);
+    imgViewer.classList.add('closing');
+    setTimeout(() => {
+      imgViewer.classList.remove('active', 'closing');
+    }, 400);
+  }
+
+  imgViewer.addEventListener('click', closeViewer);
+
+  document.getElementById('flagBtn').addEventListener('click', () => {
+    openViewer('./files/img/flag.png', 'Флаг России');
+  });
+
+  document.getElementById('gerbBtn').addEventListener('click', () => {
+    openViewer('./files/img/gerb.png', 'Герб России');
+  });
 </script>
 </body>
 </html>
